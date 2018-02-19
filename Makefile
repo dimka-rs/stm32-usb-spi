@@ -174,7 +174,7 @@ LIBS = -lc -lm -lnosys
 LIBDIR =
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
-.PHONY: clean flash
+.PHONY: clean flash debug
 
 # default action: build all
 all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
@@ -215,11 +215,17 @@ $(BUILD_DIR):
 clean:
 	-rm -fR .dep $(BUILD_DIR)
 
-#####
+#######
 # flash
-#####
+#######
 flash:
 	./st-flash write $(BUILD_DIR)/$(TARGET).bin 0x08000000
+
+#######
+# debug
+#######
+debug:
+	$(BINPATH)/$(PREFIX)gdb -ex "target remote localhost:3333" $(BUILD_DIR)/$(TARGET).elf
 
 #######################################
 # dependencies
