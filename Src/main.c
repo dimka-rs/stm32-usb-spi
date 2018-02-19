@@ -52,12 +52,17 @@
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
+#include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+uint8_t  RxBuf[1024];
+uint16_t RxPtr = 0;
+uint16_t DataLen = 0;
+
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -116,9 +121,18 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-  /* USER CODE END WHILE */
   HAL_GPIO_TogglePin(LED_PORT, LED_PIN);
   HAL_Delay(1000);
+  if(DataLen) 
+  {
+    DataLen = 0;
+    //TODO: write to spi and read back
+
+    //TODO: send received data
+    CDC_Transmit_FS(RxBuf, RxPtr);
+    RxPtr = 0;
+  }
+  /* USER CODE END WHILE */
   /* USER CODE BEGIN 3 */
 
   }
