@@ -129,11 +129,12 @@ int main(void)
   while (1)
   {
   HAL_GPIO_TogglePin(LED_PORT, LED_PIN);
-  HAL_Delay(1000);
+  HAL_Delay(200);
   if(HasData) 
   {
     HasData = 0;
     HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, GPIO_PIN_RESET);
+    HAL_Delay(1);
     uint8_t tbyte, rbyte;
     for(uint16_t i = 0; i < BufPtr; i += 2)
     {
@@ -141,6 +142,7 @@ int main(void)
         HAL_SPI_TransmitReceive(&hspi1, &tbyte, &rbyte, 1, SPI_TIMEOUT);
         btoa(&rbyte, &TxBuf[i]);
     }
+    HAL_Delay(1);
     HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, GPIO_PIN_SET);
     TxBuf[BufPtr] = '\r';
     BufPtr++;
@@ -231,14 +233,18 @@ uint8_t aton(uint8_t ascii)
 {
     if((ascii >= 'A') && (ascii <= 'Z'))
     {
-        return ascii - 'A';
-    } else if((ascii <= 'a') && (ascii <= 'z'))
+        return ascii - 'A' + 10;
+    }
+    else if((ascii >= 'a') && (ascii <= 'z'))
     {
-        return ascii - 'a';
-    } else if((ascii >= '0') && (ascii <= '9'))
+        return ascii - 'a' + 10;
+    } 
+    else if((ascii >= '0') && (ascii <= '9'))
     {
         return ascii - '0';
-    } else {
+    } 
+    else
+    {
         return 0x0F;
     }
 }
@@ -247,8 +253,9 @@ void atob(uint8_t * ascii, uint8_t * byte)
 {
     uint8_t high, low;
     high = aton(*ascii);
-    low  = aton(++*ascii);
-    *byte = (high << 4) + low;
+    ascii++;
+    low  = aton(*ascii);
+    *byte = high * 16 + low;
 }
 
 void btoa(uint8_t * byte, uint8_t * ascii)
