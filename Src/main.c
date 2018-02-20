@@ -60,8 +60,11 @@
 
 /* Private variables ---------------------------------------------------------*/
 uint8_t  RxBuf[1024];
-uint16_t RxPtr = 0;
-uint16_t DataLen = 0;
+uint8_t  TxBuf[1024];
+uint16_t BufPtr = 0;
+uint8_t  HasData = 0;
+extern SPI_HandleTypeDef hspi1;
+#define SPI_TIMEOUT 100
 
 
 /* USER CODE BEGIN PV */
@@ -71,6 +74,10 @@ uint16_t DataLen = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void atob(uint8_t * ascii, uint8_t * byte);
+void btoa(uint8_t * byte, uint8_t * ascii);
+uint8_t ntoa(uint8_t nibble);
+uint8_t aton(uint8_t ascii);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -123,14 +130,24 @@ int main(void)
   {
   HAL_GPIO_TogglePin(LED_PORT, LED_PIN);
   HAL_Delay(1000);
-  if(DataLen) 
+  if(HasData) 
   {
-    DataLen = 0;
-    //TODO: write to spi and read back
-
-    //TODO: send received data
-    CDC_Transmit_FS(RxBuf, RxPtr);
-    RxPtr = 0;
+    HasData = 0;
+    HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, GPIO_PIN_RESET);
+    uint8_t tbyte, rbyte;
+    for(uint16_t i = 0; i < BufPtr; i += 2)
+    {
+        atob(&RxBuf[i], (uint8_t *) &tbyte);
+        HAL_SPI_TransmitReceive(&hspi1, &tbyte, &rbyte, 1, SPI_TIMEOUT);
+        btoa(&rbyte, &TxBuf[i]);
+    }
+    HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, GPIO_PIN_SET);
+    TxBuf[BufPtr] = '\r';
+    BufPtr++;
+    TxBuf[BufPtr] = '\n';
+    BufPtr++;
+    CDC_Transmit_FS(TxBuf, BufPtr);
+    BufPtr = 0;
   }
   /* USER CODE END WHILE */
   /* USER CODE BEGIN 3 */
@@ -199,6 +216,51 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+uint8_t ntoa(uint8_t nibble)
+{
+    if(nibble < 10){
+        return nibble + '0';
+    } else if(nibble < 16){
+        return nibble - 10 + 'A';
+    } else {
+        return '?';
+    }
+}
+
+uint8_t aton(uint8_t ascii)
+{
+    if((ascii >= 'A') && (ascii <= 'Z'))
+    {
+        return ascii - 'A';
+    } else if((ascii <= 'a') && (ascii <= 'z'))
+    {
+        return ascii - 'a';
+    } else if((ascii >= '0') && (ascii <= '9'))
+    {
+        return ascii - '0';
+    } else {
+        return 0x0F;
+    }
+}
+
+void atob(uint8_t * ascii, uint8_t * byte)
+{
+    uint8_t high, low;
+    high = aton(*ascii);
+    low  = aton(++*ascii);
+    *byte = (high << 4) + low;
+}
+
+void btoa(uint8_t * byte, uint8_t * ascii)
+{
+    uint8_t high, low;
+    high = (*byte & 0xF0) >> 4;
+    low = *byte & 0x0F;
+    *ascii = ntoa(high);
+    ascii++;
+    *ascii = ntoa(low);
+}
+
 
 /* USER CODE END 4 */
 

@@ -286,14 +286,17 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
   extern uint8_t  RxBuf[];
-  extern uint16_t RxPtr;
-  extern uint16_t DataLen;
+  extern uint16_t BufPtr;
+  extern uint8_t  HasData;
   for(uint32_t i = 0; i < *Len; i++)
   {
-      RxBuf[RxPtr+i] = Buf[i];
-      RxPtr++;
+      if(Buf[i] == '\r'){
+          HasData = 1;
+          break;
+      }
+      RxBuf[BufPtr+i] = Buf[i];
+      BufPtr++;
   }
-  DataLen = *Len;
 
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
