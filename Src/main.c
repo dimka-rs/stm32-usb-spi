@@ -261,8 +261,8 @@ void atob(uint8_t * ascii, uint8_t * byte)
 void btoa(uint8_t * byte, uint8_t * ascii)
 {
     uint8_t high, low;
-    high = (*byte & 0xF0) >> 4;
-    low = *byte & 0x0F;
+    high = *byte >> 4;
+    low  = *byte & 0x0F;
     *ascii = ntoa(high);
     ascii++;
     *ascii = ntoa(low);
